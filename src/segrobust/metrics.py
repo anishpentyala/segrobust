@@ -6,8 +6,12 @@ import numpy as np
 def confusion_matrix(pred, target, num_classes, ignore_index=None):
     """Accumulate a (num_classes, num_classes) confusion matrix.
 
-    Rows are ground-truth labels, columns are predictions. Pixels labeled
-    ignore_index in the target are excluded, as are out-of-range labels.
+    Rows are ground-truth labels, columns are predictions. Pixels whose
+    target is ignore_index or out of range ([0, num_classes)) are
+    excluded. A prediction label out of range at a pixel whose target IS
+    valid raises ValueError: clipping it into range could manufacture
+    correct predictions, and dropping it would shrink the denominator and
+    can inflate the score, so neither is done silently.
     """
     pred = np.asarray(pred).ravel()
     target = np.asarray(target).ravel()
@@ -16,7 +20,20 @@ def confusion_matrix(pred, target, num_classes, ignore_index=None):
     valid = (target >= 0) & (target < num_classes)
     if ignore_index is not None:
         valid &= target != ignore_index
-    label = num_classes * target[valid] + pred[valid].clip(0, num_classes - 1)
+    # Out-of-range predictions at valid-target pixels are an ERROR, never
+    # silently clipped into a valid class (which can manufacture correct
+    # predictions) and never dropped (which shrinks the denominator and can
+    # inflate the score). The caller must fix or deliberately map the
+    # model's output before scoring.
+    bad = valid & ((pred < 0) | (pred >= num_classes))
+    if bad.any():
+        examples = sorted({int(v) for v in pred[bad]})[:5]
+        raise ValueError(
+            f'prediction labels out of range [0, {num_classes}) at '
+            f'{int(bad.sum())} pixels (values include {examples}); fix the '
+            'model output or map it into range deliberately before scoring'
+        )
+    label = num_classes * target[valid] + pred[valid]
     return np.bincount(label, minlength=num_classes ** 2).reshape(
         num_classes, num_classes)
 
