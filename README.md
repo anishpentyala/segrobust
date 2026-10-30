@@ -107,6 +107,21 @@ segrobust report result.json                          # markdown table
   them against published ImageNet-C/segmentation-C tables without
   re-running the reference on your data.
 
+## Examples
+
+`examples/deeplabv3_selfconsistency.py` runs segrobust against a real
+pretrained model (torchvision DeepLabV3-ResNet50) on real COCO val2017
+photos fetched at runtime. Labels are the model's own clean predictions
+(pseudo-labels), so it measures prediction stability under corruption
+(self-consistency), not ground-truth accuracy; `clean_miou` is 1.0 by
+construction and the signal is the corrupt drop. Requires
+`pip install torch torchvision`; about 6 minutes on CPU. Reference run
+(4 photos, corruptions gaussian_noise/defocus_blur/fog/frost at
+severities 1/3/5): mean corrupt mIoU 0.326, with per-severity scores
+degrading as severity rises (e.g. gaussian_noise 0.634 -> 0.060,
+fog 0.240 -> 0.149). Single model, four photos - a usability
+demonstration, not a benchmark claim.
+
 ## Tests
 
 ```bash
