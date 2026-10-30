@@ -28,9 +28,12 @@ Natural-corruption robustness evaluation for semantic segmentation models.
 ## Install
 
 ```bash
-pip install segrobust          # core
-pip install segrobust[fast]    # with numba acceleration for glass_blur
+pip install "segrobust @ git+https://github.com/anishpentyala/segrobust.git"        # core
+pip install "segrobust[fast] @ git+https://github.com/anishpentyala/segrobust.git"  # with numba acceleration for glass_blur
 ```
+
+segrobust is not on PyPI yet; install from the repo as above (both forms
+verified on a clean venv).
 
 Requires Python 3.9+. Works with any framework: your model is just a
 callable `uint8 image -> int label map`.
@@ -117,9 +120,10 @@ photos fetched at runtime. Labels are the model's own clean predictions
 construction and the signal is the corrupt drop. Requires
 `pip install torch torchvision`; about 6 minutes on CPU. Reference run
 (4 photos, corruptions gaussian_noise/defocus_blur/fog/frost at
-severities 1/3/5): mean corrupt mIoU 0.326, with per-severity scores
-degrading as severity rises (e.g. gaussian_noise 0.634 -> 0.060,
-fog 0.240 -> 0.149). Single model, four photos - a usability
+severities 1/3/5): mean corrupt mIoU 0.326; corrupt scores fall well below clean,
+with severity-1 scores closest to clean (e.g. gaussian_noise 0.634 -> 0.060,
+fog 0.240 -> 0.149; individual corruptions need not be monotone across
+severities). Single model, four photos - a usability
 demonstration, not a benchmark claim.
 
 ## Tests
