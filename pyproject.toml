@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "segrobust"
+version = "0.1.0"
+description = "Natural-corruption robustness evaluation for segmentation models: deterministic ImageNet-C corruptions, mask-geometry handling, mIoU reporting."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "Anish Pentyala"}]
+keywords = ["segmentation", "robustness", "corruptions", "imagenet-c", "miou", "evaluation"]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "numpy>=1.22",
+    "Pillow>=9.0",
+    "scikit-image>=0.20",
+    "scipy>=1.8",
+    "opencv-python-headless>=4.5",
+]
+
+[project.optional-dependencies]
+fast = ["numba>=0.57"]
+test = ["pytest>=7"]
+
+[project.scripts]
+segrobust = "segrobust.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/anishpentyala/segrobust"
+
+[tool.setuptools.packages.find]
+where = ["src"]
