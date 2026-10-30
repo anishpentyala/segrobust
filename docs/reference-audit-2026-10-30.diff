@@ -1,0 +1,6 @@
+# Reference audit diff (2026-10-30): vendored segrobust corruptions vs upstream.
+# Sources (both Apache License 2.0):
+#   - imagecorruptions 1.1.2 sdist, PyPI (https://pypi.org/project/imagecorruptions/1.1.2/)
+#   - hendrycks/robustness make_imagenet_c.py @ 8190fe329f5f072a06e3a2aea02bb5dda69aed9f
+#     (https://github.com/hendrycks/robustness/blob/8190fe329f5f072a06e3a2aea02bb5dda69aed9f/ImageNet-C/create_c/make_imagenet_c.py)
+# Context lines reproduce upstream Apache-2.0 code; attribution in repo NOTICE.
