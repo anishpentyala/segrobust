@@ -94,7 +94,8 @@ def test_corruption_actually_changes_image():
 def _reference_plasma_fractal(mapsize, wibbledecay=3):
     """Verbatim diamond-square from the ImageNet-C reference
     (Hendrycks & Dietterich, make_imagenet_c.py) / imagecorruptions 1.1.2,
-    used to check the vendored implementation against its source."""
+    both Apache License 2.0, used to check the vendored implementation
+    against its source."""
     import math as _math  # noqa: F401
     maparray = np.zeros((mapsize, mapsize), dtype=np.float64)
     maparray[0, 0] = 0
