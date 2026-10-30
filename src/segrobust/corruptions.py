@@ -61,7 +61,7 @@ def plasma_fractal(mapsize=256, wibbledecay=3):
     """
     assert (mapsize & (mapsize - 1) == 0)
     mapsize = max(mapsize, 8)
-    maparray = np.zeros((mapsize, mapsize), dtype=np.float32)
+    maparray = np.zeros((mapsize, mapsize), dtype=np.float64)
     maparray[0, 0] = 0
     stepsize = mapsize
     wibble = 100
@@ -87,12 +87,12 @@ def plasma_fractal(mapsize=256, wibbledecay=3):
                           stepsize // 2:mapsize:stepsize]
         ulgrid = maparray[0:mapsize:stepsize, 0:mapsize:stepsize]
         ldrsum = drgrid + np.roll(drgrid, 1, axis=0)
-        lulsum = np.roll(ulgrid, -1, axis=1)
+        lulsum = ulgrid + np.roll(ulgrid, -1, axis=1)
         ltsum = ldrsum + lulsum
         maparray[0:mapsize:stepsize,
-                 0:mapsize:stepsize] = wibbledmean(ltsum)
+                 stepsize // 2:mapsize:stepsize] = wibbledmean(ltsum)
         tdrsum = drgrid + np.roll(drgrid, 1, axis=1)
-        tulsum = np.roll(ulgrid, -1, axis=0)
+        tulsum = ulgrid + np.roll(ulgrid, -1, axis=0)
         ttsum = tdrsum + tulsum
         maparray[stepsize // 2:mapsize:stepsize,
                  0:mapsize:stepsize] = wibbledmean(ttsum)
