@@ -89,3 +89,60 @@ def test_corruption_actually_changes_image():
     for name in CORRUPTION_NAMES:
         out = corrupt(img, name, severity=5, seed=5)
         assert not np.array_equal(out, img), f'{name} left image unchanged'
+
+
+def _reference_plasma_fractal(mapsize, wibbledecay=3):
+    """Verbatim diamond-square from the ImageNet-C reference
+    (Hendrycks & Dietterich, make_imagenet_c.py) / imagecorruptions 1.1.2,
+    used to check the vendored implementation against its source."""
+    import math as _math  # noqa: F401
+    maparray = np.zeros((mapsize, mapsize), dtype=np.float64)
+    maparray[0, 0] = 0
+    stepsize = mapsize
+    wibble = 100
+
+    def wibbledmean(array):
+        return array / 4 + wibble * np.random.uniform(-wibble, wibble, array.shape)
+
+    def fillsquares():
+        cornerref = maparray[0:mapsize:stepsize, 0:mapsize:stepsize]
+        squareaccum = cornerref + np.roll(cornerref, shift=-1, axis=0)
+        squareaccum += np.roll(squareaccum, shift=-1, axis=1)
+        maparray[stepsize // 2:mapsize:stepsize,
+                 stepsize // 2:mapsize:stepsize] = wibbledmean(squareaccum)
+
+    def filldiamonds():
+        ms = maparray.shape[0]
+        drgrid = maparray[stepsize // 2:ms:stepsize, stepsize // 2:ms:stepsize]
+        ulgrid = maparray[0:ms:stepsize, 0:ms:stepsize]
+        ldrsum = drgrid + np.roll(drgrid, 1, axis=0)
+        lulsum = ulgrid + np.roll(ulgrid, -1, axis=1)
+        ltsum = ldrsum + lulsum
+        maparray[0:ms:stepsize, stepsize // 2:ms:stepsize] = wibbledmean(ltsum)
+        tdrsum = drgrid + np.roll(drgrid, 1, axis=1)
+        tulsum = ulgrid + np.roll(ulgrid, -1, axis=0)
+        ttsum = tdrsum + tulsum
+        maparray[stepsize // 2:ms:stepsize, 0:ms:stepsize] = wibbledmean(ttsum)
+
+    while stepsize >= 2:
+        fillsquares()
+        filldiamonds()
+        stepsize //= 2
+        wibble /= wibbledecay
+
+    maparray -= maparray.min()
+    return maparray / maparray.max()
+
+
+def test_plasma_fractal_matches_reference_algorithm():
+    """The vendored plasma_fractal must match the diamond-square reference
+    it vendors (regression test: the initial vendoring dropped both
+    ``ulgrid +`` terms and wrote the left-diamond means onto the corner
+    grid)."""
+    from segrobust.corruptions import plasma_fractal
+    for mapsize in (8, 32, 64):
+        np.random.seed(1234)
+        got = plasma_fractal(mapsize=mapsize)
+        np.random.seed(1234)
+        want = _reference_plasma_fractal(mapsize)
+        np.testing.assert_allclose(got, want, rtol=1e-9, atol=1e-9)
