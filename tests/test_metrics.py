@@ -31,3 +31,20 @@ def test_absent_class_nan_not_zero():
     ious = iou_from_confusion(cm)
     assert ious[0] == 1.0 and np.isnan(ious[1]) and np.isnan(ious[2])
     assert miou_from_confusion(cm) == 1.0
+
+
+def test_out_of_range_predictions_raise_not_clipped():
+    """Regression (audit S2 + review): pred=5 with num_classes=3 must not
+    be clipped into class 2 (manufactures correctness) nor dropped
+    (shrinks the denominator, can inflate the score) - it raises."""
+    import pytest
+    with pytest.raises(ValueError, match="out of range"):
+        confusion_matrix(np.array([0, 1, 2, 5]), np.array([0, 1, 2, 2]), 3)
+    with pytest.raises(ValueError, match="out of range"):
+        confusion_matrix(np.array([0, -1]), np.array([0, 0]), 3)
+    # invalid preds at IGNORED/out-of-range targets are excluded, not errors
+    cm = confusion_matrix(np.array([0, 5]), np.array([0, 255]), 3,
+                          ignore_index=255)
+    assert cm.sum() == 1
+    cm2 = confusion_matrix(np.array([0, 5]), np.array([0, 7]), 3)
+    assert cm2.sum() == 1
