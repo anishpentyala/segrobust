@@ -8,7 +8,7 @@ import zlib
 
 import numpy as np
 
-from .api import corrupt_pair, get_corruption_names
+from .api import corrupt_pair, get_corruption_names, _severity_index
 from .metrics import confusion_matrix, miou_from_confusion
 
 
@@ -42,7 +42,9 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
         names = get_corruption_names(corruptions)
     else:
         names = list(corruptions)
-    severities = [int(s) for s in severities]
+    severities = [_severity_index(s) for s in severities]
+    if not severities:
+        raise ValueError("need at least one severity")
 
     def run_batch(transform=None):
         cm = np.zeros((num_classes, num_classes), dtype=np.int64)

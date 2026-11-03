@@ -1,6 +1,7 @@
 """Public API: corrupt images deterministically, with mask geometry care."""
 
 from contextlib import contextmanager
+import operator
 
 import numpy as np
 
@@ -94,6 +95,19 @@ def _to_rgb(image):
     return image
 
 
+def _severity_index(severity):
+    """An explicit integer severity, never lossy numeric/text coercion."""
+    if isinstance(severity, (bool, np.bool_)):
+        raise ValueError('severity must be an integer in [1, 5], not boolean')
+    try:
+        value = operator.index(severity)
+    except TypeError as error:
+        raise ValueError('severity must be an integer in [1, 5]') from error
+    if not 1 <= value <= 5:
+        raise ValueError('severity must be an integer in [1, 5]')
+    return value
+
+
 def corrupt(image, corruption_name, severity=1, seed=None):
     """Return a corrupted copy of ``image``.
 
@@ -106,8 +120,7 @@ def corrupt(image, corruption_name, severity=1, seed=None):
     Returns uint8 ndarray with the same spatial shape as the input.
     """
     _validate_image(image)
-    if severity not in (1, 2, 3, 4, 5):
-        raise ValueError('severity must be an integer in [1, 5]')
+    severity = _severity_index(severity)
     try:
         entry = CORRUPTIONS[corruption_name]
     except KeyError:
@@ -141,10 +154,9 @@ def corrupt_pair(image, mask, corruption_name, severity=1, seed=None,
     """
     if not isinstance(mask, np.ndarray) or mask.shape[:2] != image.shape[:2]:
         raise ValueError('mask must be an ndarray with the same H, W as image')
+    severity = _severity_index(severity)
     if corruption_name in GEOMETRIC:
         _validate_image(image)
-        if severity not in (1, 2, 3, 4, 5):
-            raise ValueError('severity must be an integer in [1, 5]')
         rgb = _to_rgb(image)
         with _seeded(seed):
             dx, dy = _c.elastic_fields(rgb.shape, severity)

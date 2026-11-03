@@ -126,6 +126,15 @@ fog 0.240 -> 0.149; individual corruptions need not be monotone across
 severities). Single model, four photos - a usability
 demonstration, not a benchmark claim.
 
+## Exact severity inputs
+
+`corrupt`, `corrupt_pair` and `evaluate` accept integer-index severity values
+from 1 through 5, including NumPy integer scalars. Floats, strings and booleans
+are rejected rather than truncated or treated as an integer severity. Evaluation
+validates its nonempty severity sequence before invoking the model or progress
+callback. For example, `severities=[1.9]` raises instead of silently running
+severity 1. This does not change the corruption formulas for valid integers.
+
 ## Tests
 
 ```bash
