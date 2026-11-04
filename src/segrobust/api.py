@@ -161,6 +161,14 @@ def corrupt(image, corruption_name, severity=1, seed=None):
     return out
 
 
+def _validate_mask(mask, shape):
+    if (not isinstance(mask, np.ndarray) or mask.ndim != 2
+            or mask.shape != shape):
+        raise ValueError('mask must be a 2D ndarray with the same H, W as image')
+    if mask.dtype.kind not in 'biu':
+        raise TypeError('mask labels must have integer dtypes')
+
+
 def corrupt_pair(image, mask, corruption_name, severity=1, seed=None,
                  ignore_index=None):
     """Corrupt ``image`` and keep ``mask`` (int labels, HxW) aligned.
@@ -171,11 +179,10 @@ def corrupt_pair(image, mask, corruption_name, severity=1, seed=None,
     boundaries track the warped image content. ``ignore_index`` label
     values are preserved by nearest sampling like any other label.
     """
-    if not isinstance(mask, np.ndarray) or mask.shape[:2] != image.shape[:2]:
-        raise ValueError('mask must be an ndarray with the same H, W as image')
+    _validate_image(image)
+    _validate_mask(mask, image.shape[:2])
     severity = _severity_index(severity)
     if corruption_name in GEOMETRIC:
-        _validate_image(image)
         rgb = _to_rgb(image)
         with _seeded(seed):
             dx, dy = _c.elastic_fields(rgb.shape, severity)
