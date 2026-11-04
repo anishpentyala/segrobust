@@ -9,7 +9,8 @@ import zlib
 
 import numpy as np
 
-from .api import corrupt_pair, get_corruption_names, _severity_index
+from .api import (corrupt_pair, get_corruption_names, _severity_index,
+                  _validate_image, _validate_mask)
 from .metrics import confusion_matrix, miou_from_confusion
 
 
@@ -39,6 +40,10 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
         raise ValueError('images and masks must have the same length')
     if not images:
         raise ValueError('need at least one image')
+    # Validate the complete dataset before calling the model or reporting progress.
+    for img, msk in zip(images, masks):
+        _validate_image(img)
+        _validate_mask(msk, img.shape[:2])
     if isinstance(corruptions, str):
         names = get_corruption_names(corruptions)
     else:
@@ -55,7 +60,7 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
             if transform is not None:
                 im, mk = transform(i, img, msk)
             pred = np.asarray(model_fn(im))
-            if pred.shape[:2] != mk.shape[:2]:
+            if pred.shape != mk.shape:
                 raise ValueError(
                     f'model_fn returned shape {pred.shape} for image '
                     f'{i}, expected spatial shape {mk.shape[:2]}')
