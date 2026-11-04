@@ -199,3 +199,14 @@ Evaluation plans are checked before model inference or progress callbacks:
 range, and every explicitly listed corruption must be known. Invalid late plan
 entries do not start a clean pass or run earlier corruptions first. These checks
 do not estimate memory requirements or validate model behavior before execution.
+
+### Confusion count tables
+
+`iou_from_confusion` and `miou_from_confusion` require a square, two-dimensional
+real numeric table of finite, nonnegative counts or weights. Invalid shapes,
+negative counts and nonfinite values raise instead of producing a plausible
+score. Fractional weights are supported. Integer counts are widened before
+sums, and overflowing finite floating-point unions use per-class scaling.
+Empty and absent classes keep their existing NaN behavior. This does not make
+floating-point arithmetic exact or prevent an upstream accumulator from
+already overflowing before it is passed to these functions.
