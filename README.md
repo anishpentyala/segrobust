@@ -144,6 +144,15 @@ validates its nonempty severity sequence before invoking the model or progress
 callback. For example, `severities=[1.9]` raises instead of silently running
 severity 1. This does not change the corruption formulas for valid integers.
 
+## Exact mask labels under elastic warps
+
+`corrupt_pair(..., "elastic_transform")` samples source-pixel addresses with
+nearest-neighbor interpolation, then gathers labels from the original mask.
+It does not convert label values to floating point. Large integer class IDs
+and ignore labels therefore keep their exact bits, including signed and unsigned
+64-bit labels. The displacement field and image interpolation are unchanged.
+This is label-identity preservation, not a change to benchmark comparability.
+
 ## Tests
 
 ```bash

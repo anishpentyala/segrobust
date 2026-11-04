@@ -163,9 +163,13 @@ def corrupt_pair(image, mask, corruption_name, severity=1, seed=None,
             warped_img = np.clip(
                 _c.apply_elastic(rgb.astype(np.float32) / 255., dx, dy,
                                  order=1), 0, 1) * 255
-            warped_mask = _c.apply_elastic(
-                mask.astype(np.float32), dx, dy, order=0)
-        warped_mask = warped_mask.astype(mask.dtype)
+            # Warp pixel addresses, not class values. Floating conversion of
+            # int64/uint64 labels can invent classes, even at nearest order.
+            # The address array contains only small exactly represented values;
+            # gather from the original mask to keep every label bit unchanged.
+            addresses = np.arange(mask.size, dtype=np.float64).reshape(mask.shape)
+            warped_addresses = _c.apply_elastic(addresses, dx, dy, order=0)
+            warped_mask = mask.ravel()[warped_addresses.astype(np.intp)]
         was_single = image.ndim == 2 or image.shape[2] == 1
         if was_single:
             gray = np.uint8(np.clip(_c.rgb2gray(np.uint8(warped_img)), 0, 255))
