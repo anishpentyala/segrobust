@@ -66,18 +66,45 @@ def confusion_matrix(pred, target, num_classes, ignore_index=None):
         num_classes, num_classes)
 
 
+def _confusion_values(cm):
+    """A square, finite, nonnegative count/weight table, widened before sums."""
+    cm = np.asarray(cm)
+    if cm.ndim != 2 or cm.shape[0] != cm.shape[1]:
+        raise ValueError('confusion matrix must be square and two-dimensional')
+    if cm.dtype.kind not in 'biuf':
+        raise TypeError('confusion matrix must contain real numeric counts')
+    values = cm.astype(np.result_type(cm.dtype, np.float64))
+    if not np.isfinite(values).all() or (values < 0).any():
+        raise ValueError('confusion matrix counts must be finite and nonnegative')
+    return values
+
+
 def iou_from_confusion(cm):
-    """Per-class IoU from a confusion matrix; NaN for absent classes."""
-    tp = np.diag(cm).astype(np.float64)
-    union = (cm.sum(axis=1) + cm.sum(axis=0) - tp).astype(np.float64)
-    with np.errstate(invalid='ignore', divide='ignore'):
-        return np.where(union > 0, tp / union, np.nan)
+    """Per-class IoU from finite nonnegative counts/weights; NaN if absent."""
+    values = _confusion_values(cm)
+    tp = np.diag(values)
+    with np.errstate(over='ignore', invalid='ignore', divide='ignore'):
+        union = values.sum(axis=1) + values.sum(axis=0) - tp
+        result = np.where(union > 0, tp / union, np.nan)
+        overflowing = ~np.isfinite(union)
+        if overflowing.any():
+            # Scale each affected class independently: an unrelated large
+            # class must not erase a small class's counts by underflow.
+            scale = np.maximum(values.max(axis=1), values.max(axis=0))
+            rows = values[overflowing] / scale[overflowing, None]
+            columns = values[:, overflowing] / scale[None, overflowing]
+            diagonal = tp[overflowing] / scale[overflowing]
+            scaled_union = rows.sum(axis=1) + columns.sum(axis=0) - diagonal
+            result[overflowing] = diagonal / scaled_union
+    return result
+
 
 
 def miou_from_confusion(cm):
     """Mean IoU over classes present in the ground truth."""
-    ious = iou_from_confusion(cm)
-    present = cm.sum(axis=1) > 0
+    values = _confusion_values(cm)
+    ious = iou_from_confusion(values)
+    present = (values > 0).any(axis=1)
     if not present.any():
         return float('nan')
     return float(np.nanmean(ious[present]))
