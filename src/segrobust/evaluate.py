@@ -10,8 +10,8 @@ import zlib
 import numpy as np
 
 from .api import (corrupt_pair, get_corruption_names, _severity_index,
-                  _validate_image, _validate_mask)
-from .metrics import confusion_matrix, miou_from_confusion
+                  _validate_image, _validate_mask, CORRUPTIONS)
+from .metrics import confusion_matrix, miou_from_confusion, _class_count
 
 
 def evaluate(model_fn, images, masks, num_classes, corruptions='common',
@@ -34,6 +34,7 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
       mean_corrupt_miou: mean over corruptions and severities
       relative_drop: (clean_miou - mean_corrupt_miou) / clean_miou
     """
+    num_classes = _class_count(num_classes)
     images = list(images)
     masks = list(masks)
     if len(images) != len(masks):
@@ -48,6 +49,9 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
         names = get_corruption_names(corruptions)
     else:
         names = list(corruptions)
+    for name in names:
+        if not isinstance(name, str) or name not in CORRUPTIONS:
+            raise ValueError(f"unknown corruption {name!r}")
     severities = [_severity_index(s) for s in severities]
     if not severities:
         raise ValueError("need at least one severity")

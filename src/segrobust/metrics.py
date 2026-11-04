@@ -6,6 +6,21 @@ import operator
 import numpy as np
 
 
+def _class_count(num_classes):
+    """Validate class count before allocation or user model callbacks."""
+    try:
+        if isinstance(num_classes, (bool, np.bool_)):
+            raise TypeError
+        num_classes = operator.index(num_classes)
+    except TypeError:
+        raise ValueError('num_classes must be a positive integer') from None
+    if num_classes <= 0:
+        raise ValueError('num_classes must be a positive integer')
+    if num_classes > math.isqrt(np.iinfo(np.intp).max):
+        raise ValueError('num_classes squared exceeds platform index range')
+    return num_classes
+
+
 def confusion_matrix(pred, target, num_classes, ignore_index=None):
     """Accumulate a (num_classes, num_classes) confusion matrix.
 
@@ -22,16 +37,7 @@ def confusion_matrix(pred, target, num_classes, ignore_index=None):
         raise ValueError('pred and target must have the same number of pixels')
     if pred.dtype.kind not in 'biu' or target.dtype.kind not in 'biu':
         raise TypeError('pred and target labels must have integer dtypes')
-    try:
-        if isinstance(num_classes, (bool, np.bool_)):
-            raise TypeError
-        num_classes = operator.index(num_classes)
-    except TypeError:
-        raise ValueError('num_classes must be a positive integer') from None
-    if num_classes <= 0:
-        raise ValueError('num_classes must be a positive integer')
-    if num_classes > math.isqrt(np.iinfo(np.intp).max):
-        raise ValueError('num_classes squared exceeds platform index range')
+    num_classes = _class_count(num_classes)
     valid = (target >= 0) & (target < num_classes)
     if ignore_index is not None:
         valid &= target != ignore_index

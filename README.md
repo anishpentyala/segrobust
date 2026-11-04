@@ -193,3 +193,9 @@ additional scored pixels. Model predictions must have the exact mask shape.
 `evaluate` validates all images and masks before calling the model or emitting
 progress. Convert palette/RGB labels deliberately before evaluation; this
 validation does not define a color-to-class mapping.
+
+Evaluation plans are checked before model inference or progress callbacks:
+`num_classes` must be a positive non-boolean integer within the platform index
+range, and every explicitly listed corruption must be known. Invalid late plan
+entries do not start a clean pass or run earlier corruptions first. These checks
+do not estimate memory requirements or validate model behavior before execution.
