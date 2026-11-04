@@ -99,6 +99,12 @@ checks severity identity, not the accuracy or statistical validity of scores.
   never perturb the caller's random stream. `evaluate()` derives one
   stable draw per (image index, corruption, severity) triple, so reports
   reproduce across runs and processes.
+- **Thread scope.** Calls through `corrupt` and `corrupt_pair` serialize their
+  legacy NumPy RNG sections, including unseeded calls. Concurrent seeded
+  library calls keep their own deterministic draws and restore the caller's
+  saved RNG state. This does not isolate unrelated code that calls `np.random`
+  directly in another thread, and is not a parallel-speedup claim. Separate
+  processes are preferable when running expensive corruptions in parallel.
 - **Photometric vs geometric.** 18 of the 19 corruptions are treated as
   photometric (mask unchanged) following the ImageNet-C label-preserving
   convention. `elastic_transform` genuinely moves pixels, so
