@@ -4,6 +4,7 @@ The model is a plain callable: image (uint8 HxWx3) -> predicted label map
 (int HxW). Nothing framework-specific is imported here.
 """
 
+import operator
 import zlib
 
 import numpy as np
@@ -99,12 +100,40 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
 
 def format_report(result):
     """Render an evaluate() result as a markdown table."""
-    lines = ['| corruption | ' + ' | '.join(f's{int(s)}'
-             for s in result['severities']) + ' | mean |',
-             '|' + '---|' * (len(result['severities']) + 2)]
+    # A rendered column is evidence of an exact experiment setting. Never
+    # truncate floats or treat True as severity 1 when naming that column.
+    severities = []
+    for value in result['severities']:
+        try:
+            if isinstance(value, (bool, np.bool_)):
+                raise TypeError
+            severity = operator.index(value)
+        except TypeError:
+            raise ValueError('report severities must be integers from 1 to 5') from None
+        if not 1 <= severity <= 5:
+            raise ValueError('report severities must be integers from 1 to 5')
+        severities.append(severity)
+    if not severities:
+        raise ValueError('report severities must be nonempty')
     for name in result['corruptions']:
         row = result['per_corruption'][name]
-        vals = [row[s] for s in result['severities']]
+        # Validate key types as well as equality: True and 1.0 compare equal
+        # to 1 in a dict, but do not identify integer experiment settings.
+        for key in row:
+            if isinstance(key, (bool, np.bool_)):
+                raise ValueError('report row severity keys must be integers')
+            try:
+                operator.index(key)
+            except TypeError:
+                raise ValueError('report row severity keys must be integers') from None
+        if set(row) != set(severities):
+            raise ValueError('report row severities must match report columns')
+    lines = ['| corruption | ' + ' | '.join(f's{s}'
+             for s in severities) + ' | mean |',
+             '|' + '---|' * (len(severities) + 2)]
+    for name in result['corruptions']:
+        row = result['per_corruption'][name]
+        vals = [row[s] for s in severities]
         cells = ' | '.join(f'{v:.4f}' for v in vals)
         lines.append(f'| {name} | {cells} | {np.mean(vals):.4f} |')
     lines.append('')

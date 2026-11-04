@@ -7,6 +7,24 @@ import sys
 import numpy as np
 
 
+def _unique_json_object(pairs):
+    """Do not discard duplicate saved-result keys while loading JSON."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f'duplicate JSON key: {key!r}')
+        result[key] = value
+    return result
+
+
+def _json_severity_key(key):
+    # json.dumps(evaluate(...)) writes exactly these canonical keys.
+    # int() would silently collapse aliases such as "01", "+1" and " 1".
+    if key not in ('1', '2', '3', '4', '5'):
+        raise ValueError('JSON severity keys must be canonical strings 1 through 5')
+    return int(key)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(
         prog='segrobust',
@@ -53,11 +71,10 @@ def main(argv=None):
     if args.command == 'report':
         from .evaluate import format_report
         with open(args.json_path) as fh:
-            result = json.load(fh)
+            result = json.load(fh, object_pairs_hook=_unique_json_object)
         # JSON keys arrive as strings; restore int severity keys
-        result['severities'] = [int(s) for s in result['severities']]
         result['per_corruption'] = {
-            k: {int(s): v for s, v in row.items()}
+            k: {_json_severity_key(s): v for s, v in row.items()}
             for k, row in result['per_corruption'].items()}
         print(format_report(result))
         return 0

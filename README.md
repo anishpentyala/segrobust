@@ -82,6 +82,15 @@ segrobust corrupt in.png --name fog --severity 3 --seed 0 --out foggy.png
 segrobust report result.json                          # markdown table
 ```
 
+`format_report()` keeps severity labels exact: columns must be integers
+from 1 through 5, and every corruption row must contain those exact settings.
+The `report` command accepts the JSON produced by `json.dumps(evaluate(...))`:
+integer column values and canonical string row keys (`"1"` through `"5"`).
+It rejects fractional/boolean/string columns, duplicate JSON keys, alias keys
+such as `"01"`, and missing or extra row settings instead of silently renaming
+or dropping data. Valid reports preserve the requested column order, including repeats. This
+checks severity identity, not the accuracy or statistical validity of scores.
+
 ## Design notes
 
 - **Determinism.** With `seed` set, a corruption call seeds NumPy's
