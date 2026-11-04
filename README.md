@@ -183,3 +183,13 @@ pytest            # 97 tests: every corruption x severities x small sizes,
 ## License
 
 Apache-2.0 (see LICENSE and NOTICE).
+
+### Label-map validation
+
+Masks passed to `corrupt_pair` and `evaluate` must be two-dimensional integer
+(or boolean) NumPy arrays with exactly the image's height and width. Channel
+axes such as `(H, W, 1)` and `(H, W, 3)` are rejected, not flattened into
+additional scored pixels. Model predictions must have the exact mask shape.
+`evaluate` validates all images and masks before calling the model or emitting
+progress. Convert palette/RGB labels deliberately before evaluation; this
+validation does not define a color-to-class mapping.
