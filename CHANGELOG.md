@@ -1,5 +1,7 @@
 # Changelog
 
+- Reject channel-axis and noninteger masks before corruption or evaluation; require exact two-dimensional prediction shape rather than silently scoring extra channels. AI-assisted implementation and tests.
+
 ## 0.1.1 (2026-10-30)
 
 ### Fixed
