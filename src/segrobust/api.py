@@ -2,6 +2,8 @@
 
 from contextlib import contextmanager
 import operator
+import os
+import threading
 
 import numpy as np
 
@@ -55,6 +57,19 @@ def get_corruption_names(subset='common'):
         "'noise', 'blur', 'weather', 'digital'")
 
 
+_RNG_LOCK = threading.RLock()
+
+
+def _reset_rng_lock_after_fork():
+    # A vanished parent thread may have held the lock when the child forked.
+    global _RNG_LOCK
+    _RNG_LOCK = threading.RLock()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_reset_rng_lock_after_fork)
+
+
 @contextmanager
 def _seeded(seed):
     """Seed the legacy global RNG for the duration of one corruption call.
@@ -63,15 +78,19 @@ def _seeded(seed):
     We save and restore that state so a seeded call is reproducible AND
     does not disturb the caller's RNG stream.
     """
-    if seed is None:
-        yield
-        return
-    state = np.random.get_state()
-    np.random.seed(seed)
-    try:
-        yield
-    finally:
-        np.random.set_state(state)
+    # All library draws share the legacy RNG, including unseeded calls.
+    # Serialize library callers, but do not claim to protect arbitrary NumPy
+    # draws made by unrelated code that does not take this lock.
+    with _RNG_LOCK:
+        if seed is None:
+            yield
+            return
+        state = np.random.get_state()
+        np.random.seed(seed)
+        try:
+            yield
+        finally:
+            np.random.set_state(state)
 
 
 def _validate_image(image):
