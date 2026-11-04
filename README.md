@@ -91,6 +91,19 @@ such as `"01"`, and missing or extra row settings instead of silently renaming
 or dropping data. Valid reports preserve the requested column order, including repeats. This
 checks severity identity, not the accuracy or statistical validity of scores.
 
+## Metric label storage
+
+Confusion-matrix bin arithmetic uses platform-width integer indices, not the
+storage width of the masks. Valid uint8/int8 labels for 21 classes therefore
+retain their exact class pairs instead of overflowing during multiplication.
+Signed/unsigned integer arrays can be mixed. Ignored or out-of-range target
+pixels are filtered before widening, including uint64 sentinel values.
+Out-of-range predictions at valid target pixels still raise rather than being
+clipped or dropped. Float, complex and object label arrays are rejected, not
+silently truncated. Class counts must be positive integers with their square
+inside the platform index range; this is an index-safety check, not a promise
+that an arbitrarily large dense confusion matrix fits available memory.
+
 ## Design notes
 
 - **Determinism.** With `seed` set, a corruption call seeds NumPy's

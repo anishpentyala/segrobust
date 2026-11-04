@@ -19,3 +19,11 @@
   algorithm at fixed seeds. Fog outputs change versus v0.1.0; rerun
   studies that used v0.1.0 fog. The other 18 corruptions were audited
   against the same references with no further divergences found.
+
+## Confusion-matrix index width
+
+- Widen validated, filtered integer label operands before bin multiplication
+  and addition. Avoid wrong scores from narrow uint8/int8/uint16/int16 masks
+  and float promotion from mixed signed/unsigned label storage.
+- Reject noninteger label arrays and invalid or index-overflowing class counts
+  without truncating labels. Preserve ignore filtering and prediction errors.
