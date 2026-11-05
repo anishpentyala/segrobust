@@ -11,12 +11,12 @@ import numpy as np
 
 from .api import (corrupt_pair, get_corruption_names, _severity_index,
                   _validate_image, _validate_mask, CORRUPTIONS)
-from .metrics import confusion_matrix, miou_from_confusion, _class_count
+from .metrics import confusion_matrix, miou_from_confusion, iou_from_confusion, _class_count
 
 
 def evaluate(model_fn, images, masks, num_classes, corruptions='common',
              severities=(1, 2, 3, 4, 5), seed=0, ignore_index=None,
-             progress=None):
+             progress=None, include_per_class=False):
     """Evaluate mIoU on clean images and under each corruption/severity.
 
     model_fn: callable uint8 image -> int label map (H, W).
@@ -27,13 +27,21 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
     seed: base seed; the (image index, corruption, severity) triple maps
         deterministically to one corruption draw, so reruns reproduce.
     progress: optional callable(msg: str).
+    include_per_class: bool, opt into class-indexed IoU and target pixel counts
+        from the same pooled confusion matrices, without extra model calls.
 
     Returns a dict:
       clean_miou: float
       per_corruption: {name: {severity: miou}}
       mean_corrupt_miou: mean over corruptions and severities
       relative_drop: (clean_miou - mean_corrupt_miou) / clean_miou
+      per_class (only when requested): clean and per_corruption evidence, each
+        with class-indexed iou and target_pixels lists. IoU is NaN only when
+        the class has neither target nor prediction pixels. Target-absent
+        false-positive classes have zero IoU but remain excluded from mIoU.
     """
+    if type(include_per_class) is not bool:
+        raise ValueError("include_per_class must be a boolean")
     num_classes = _class_count(num_classes)
     images = list(images)
     masks = list(masks)
@@ -70,15 +78,23 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
                     f'{i}, expected spatial shape {mk.shape[:2]}')
             cm += confusion_matrix(pred, mk, num_classes,
                                    ignore_index=ignore_index)
-        return miou_from_confusion(cm)
+        score = miou_from_confusion(cm)
+        evidence = None
+        if include_per_class:
+            evidence = {"iou": iou_from_confusion(cm).tolist(),
+                        "target_pixels": cm.sum(axis=1).tolist()}
+        return score, evidence
 
     if progress:
         progress('clean pass')
-    clean = run_batch()
+    clean, clean_classes = run_batch()
+    class_scores = {}
 
     per_corruption = {}
     for name in names:
         per_corruption[name] = {}
+        if include_per_class:
+            class_scores[name] = {}
         for sev in severities:
             if progress:
                 progress(f'{name} severity {sev}')
@@ -90,13 +106,16 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
                 return corrupt_pair(img, msk, name, sev, seed=draw_seed,
                                     ignore_index=ignore_index)
 
-            per_corruption[name][sev] = run_batch(transform)
+            score, classes = run_batch(transform)
+            per_corruption[name][sev] = score
+            if include_per_class:
+                class_scores[name][sev] = classes
 
     flat = [v for per_sev in per_corruption.values() for v in per_sev.values()]
     mean_corrupt = float(np.mean(flat)) if flat else float('nan')
     rel_drop = ((clean - mean_corrupt) / clean
                 if clean and not np.isnan(clean) and clean != 0 else float('nan'))
-    return {
+    result = {
         'clean_miou': clean,
         'per_corruption': per_corruption,
         'mean_corrupt_miou': mean_corrupt,
@@ -105,6 +124,10 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
         'corruptions': names,
         'severities': severities,
     }
+    if include_per_class:
+        result['per_class'] = {'clean': clean_classes,
+                               'per_corruption': class_scores}
+    return result
 
 
 def format_report(result):
