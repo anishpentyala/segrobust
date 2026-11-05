@@ -210,3 +210,33 @@ sums, and overflowing finite floating-point unions use per-class scaling.
 Empty and absent classes keep their existing NaN behavior. This does not make
 floating-point arithmetic exact or prevent an upstream accumulator from
 already overflowing before it is passed to these functions.
+
+## Per-class robustness diagnostics
+
+Set `include_per_class=True` on `evaluate()` to inspect which classes lose IoU
+under corruption. The optional `result["per_class"]` contains `clean` and
+`per_corruption[name][severity]` records. Each record has `iou` and
+`target_pixels` lists in class-index order (`0` through `num_classes - 1`):
+
+```python
+result = evaluate(my_model, images, masks, num_classes=21,
+                  corruptions=["fog"], severities=[1, 3, 5],
+                  include_per_class=True)
+print(result["per_class"]["per_corruption"]["fog"][3]["iou"])
+```
+
+These diagnostics reuse each pass's accumulated confusion matrix, not an
+average of per-image IoUs. They do not add model calls or change aggregate
+scores. Ignored and out-of-range target pixels are excluded as before. A
+class with neither target nor predicted pixels has NaN IoU. A target-absent
+class with false-positive predictions has zero IoU and zero target pixels;
+the existing mIoU still averages only target-present classes. This makes
+the denominator visible without changing that metric's policy.
+
+Defaults return the same result fields as before; `format_report()` remains
+the aggregate table even with the optional diagnostics present. Lists use
+plain Python numbers. Undefined scores remain float NaN, as in existing
+aggregate results, so strict JSON consumers must handle those explicitly.
+The option requires a Python bool and is checked before any model/progress
+callback. Per-class lists increase report size with classes and settings;
+this is not confidence intervals or evidence of benchmark generalization.
