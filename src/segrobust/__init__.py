@@ -5,7 +5,7 @@ from .api import (CORRUPTIONS, CORRUPTION_NAMES, GEOMETRIC, corrupt,
 from .evaluate import evaluate, format_report
 from .metrics import confusion_matrix, iou_from_confusion, miou_from_confusion
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 __all__ = ['CORRUPTIONS', 'CORRUPTION_NAMES', 'GEOMETRIC', 'corrupt',
            'corrupt_pair', 'get_corruption_names', 'evaluate',
