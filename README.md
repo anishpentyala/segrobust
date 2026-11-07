@@ -240,3 +240,14 @@ aggregate results, so strict JSON consumers must handle those explicitly.
 The option requires a Python bool and is checked before any model/progress
 callback. Per-class lists increase report size with classes and settings;
 this is not confidence intervals or evidence of benchmark generalization.
+
+## Installed-package checks
+
+The `Installed package` workflow builds a source distribution and then a wheel
+from that distribution. It installs the wheel and runs the full test suite from
+outside the checkout, checks the console entry point and installed version, and
+checks that the requested optional backend is actually active. The Linux matrix
+covers Python 3.9 without numba and Python 3.13 both without and with numba.
+Dependencies are resolved for each runtime rather than pinned to a shared lock.
+This is a regression gate for those environments, not proof of every dependency
+combination, operating system or segmentation model.
