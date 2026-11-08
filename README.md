@@ -88,7 +88,7 @@ The `report` command accepts the JSON produced by `json.dumps(evaluate(...))`:
 integer column values and canonical string row keys (`"1"` through `"5"`).
 It rejects fractional/boolean/string columns, duplicate JSON keys, alias keys
 such as `"01"`, and missing or extra row settings instead of silently renaming
-or dropping data. Valid reports preserve the requested column order, including repeats. This
+or dropping data. Valid reports preserve the requested unique column order. This
 checks severity identity, not the accuracy or statistical validity of scores.
 
 ## Metric label storage
@@ -263,3 +263,18 @@ not silently deduplicated: repeated trials need a separate explicit evaluation
 plan, which this API does not model. `format_report` also rejects duplicate
 columns or corruption rows in saved results. Unique input order is preserved,
 and an empty corruption list still supports the existing clean-only evaluation.
+
+## Model callback input ownership
+
+Every model call receives a fresh writable copy of that condition's image.
+In-place preprocessing inside the callable therefore cannot rewrite the input
+dataset, affect later corruption draws, or change a target mask that happens
+to share image storage. This also allows read-only NumPy dataset images. The
+copy costs one image allocation per call; no extra inference is performed.
+Returned prediction views remain supported and are scored immediately.
+
+This is an input-ownership boundary, not a sandbox or model-state reset.
+Callbacks must not mutate targets through captured references, retain and
+concurrently rewrite returned prediction arrays, or change other caller state
+if repeatable results are required. Model state and external concurrency are
+not isolated.
