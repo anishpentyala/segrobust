@@ -60,9 +60,14 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
     for name in names:
         if not isinstance(name, str) or name not in CORRUPTIONS:
             raise ValueError(f"unknown corruption {name!r}")
+    if len(set(names)) != len(names):
+        raise ValueError("corruption names must be unique")
     severities = [_severity_index(s) for s in severities]
     if not severities:
         raise ValueError("need at least one severity")
+
+    if len(set(severities)) != len(severities):
+        raise ValueError("severities must be unique")
 
     def run_batch(transform=None):
         cm = np.zeros((num_classes, num_classes), dtype=np.int64)
@@ -147,7 +152,12 @@ def format_report(result):
         severities.append(severity)
     if not severities:
         raise ValueError('report severities must be nonempty')
-    for name in result['corruptions']:
+    if len(set(severities)) != len(severities):
+        raise ValueError('report severities must be unique')
+    names = result['corruptions']
+    if len(set(names)) != len(names):
+        raise ValueError('report corruption names must be unique')
+    for name in names:
         row = result['per_corruption'][name]
         # Validate key types as well as equality: True and 1.0 compare equal
         # to 1 in a dict, but do not identify integer experiment settings.
