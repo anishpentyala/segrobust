@@ -86,7 +86,7 @@ def test_cli_rejects_duplicate_raw_json_keys(tmp_path, capsys):
     assert capsys.readouterr().out == ''
 
 
-@pytest.mark.parametrize('severities', [[1, 3], [5, 2, 1], [3, 1, 3]])
+@pytest.mark.parametrize('severities', [[1, 3], [5, 2, 1], [3, 1]])
 def test_real_evaluate_json_roundtrip(tmp_path, capsys, severities):
     img = np.zeros((8, 8, 3), dtype=np.uint8)
     mask = np.zeros((8, 8), dtype=np.int64)
@@ -179,6 +179,10 @@ def test_all_short_valid_setting_orders_keep_exact_columns():
             r = result()
             r['severities'] = settings
             r['per_corruption']['fog'] = {s: s / 10 for s in settings}
+            if len(set(settings)) != len(settings):
+                with pytest.raises(ValueError, match='unique'):
+                    format_report(r)
+                continue
             table = format_report(r)
             expected_header = '| corruption | ' + ' | '.join(
                 f's{s}' for s in settings) + ' | mean |'
@@ -187,7 +191,7 @@ def test_all_short_valid_setting_orders_keep_exact_columns():
             assert table.splitlines()[2].startswith('| fog | ' + expected_cells + ' | ')
 
 
-@pytest.mark.parametrize('settings', [[5, 1, 5], [2, 4, 3]])
+@pytest.mark.parametrize('settings', [[5, 1], [2, 4, 3]])
 def test_json_report_keeps_nan_from_all_ignored_targets(tmp_path, capsys, settings):
     img = np.zeros((8, 8, 3), dtype=np.uint8)
     mask = np.full((8, 8), 255, dtype=np.int64)
