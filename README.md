@@ -251,3 +251,15 @@ covers Python 3.9 without numba and Python 3.13 both without and with numba.
 Dependencies are resolved for each runtime rather than pinned to a shared lock.
 This is a regression gate for those environments, not proof of every dependency
 combination, operating system or segmentation model.
+
+## Unique experiment settings
+
+`evaluate` requires unique corruption names and unique integer severity values.
+Repeated entries previously executed extra model passes but overwrote earlier
+scores in the keyed result. A repeated severity could also appear twice in a
+report table, giving its row mean different weighting from the headline mean.
+They now raise `ValueError` before any model or progress callback. Values are
+not silently deduplicated: repeated trials need a separate explicit evaluation
+plan, which this API does not model. `format_report` also rejects duplicate
+columns or corruption rows in saved results. Unique input order is preserved,
+and an empty corruption list still supports the existing clean-only evaluation.
