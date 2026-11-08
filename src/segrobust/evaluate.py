@@ -19,7 +19,10 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
              progress=None, include_per_class=False):
     """Evaluate mIoU on clean images and under each corruption/severity.
 
-    model_fn: callable uint8 image -> int label map (H, W).
+    model_fn: callable uint8 image -> int label map (H, W). Each call receives
+        its own writable image copy, so in-place preprocessing cannot rewrite
+        caller images, aliased targets or later corruption inputs. This does
+        not isolate model state, captured variables or unrelated concurrent code.
     images, masks: equal-length sequences of uint8 images and int masks.
     corruptions: subset name ('common', 'validation', 'all', a category)
         or an explicit list of corruption names.
@@ -76,7 +79,10 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
             mk = msk
             if transform is not None:
                 im, mk = transform(i, img, msk)
-            pred = np.asarray(model_fn(im))
+            # The clean image may be caller-owned or share storage with its
+            # target/other samples. Treat model preprocessing as local to this
+            # invocation, just as corrupted conditions use independent images.
+            pred = np.asarray(model_fn(im.copy()))
             if pred.shape != mk.shape:
                 raise ValueError(
                     f'model_fn returned shape {pred.shape} for image '
