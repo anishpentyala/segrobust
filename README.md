@@ -91,6 +91,32 @@ such as `"01"`, and missing or extra row settings instead of silently renaming
 or dropping data. Valid reports preserve the requested unique column order. This
 checks severity identity, not the accuracy or statistical validity of scores.
 
+## Masked arrays require an explicit nodata choice
+
+NumPy `MaskedArray` objects are rejected for images, target labels, model
+predictions and confusion-count tables, including arrays whose mask is
+currently all false. Ordinary NumPy conversion can discard the mask and score
+underlying invalid pixels as real observations. Evaluation validates all input
+images/targets before calling the model or progress callback, and rejects masked
+predictions before converting them to arrays. No score is returned for an
+incomplete evaluation.
+
+Convert masked target labels deliberately to a plain integer array with an
+unused, representable ignore label, then pass that same `ignore_index`:
+
+```python
+# Choose 255 only when it fits the target dtype and is not a real class.
+target = masked_target.filled(255)
+result = evaluate(model, images, [target], num_classes=2, ignore_index=255)
+```
+
+Do not discard a mask with `.data` unless including its underlying pixels is
+what you intend. Images and predictions need their own explicit application
+policy before evaluation; there is no automatic fill, masked prediction drop,
+or masked-count interpretation. Plain arrays and existing `ignore_index`
+behavior are unchanged. This guard does not make corruption or metrics
+mask-aware, validate image nodata choices, or detect a mask removed by the caller.
+
 ## Metric label storage
 
 Confusion-matrix bin arithmetic uses platform-width integer indices, not the

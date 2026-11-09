@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Reject NumPy MaskedArray images, labels, model predictions and confusion
+  tables instead of silently discarding invalid-pixel masks. All-false masks
+  are also unsupported. This intentionally changes previously accepted input
+  behavior. Convert nodata explicitly; for target labels, use an unused
+  representable integer fill label with the same ignore_index. AI-assisted
+  implementation, tests and documentation.
+
+### Release plan
+
+- This source change is unreleased. The package and runtime version remain
+  0.1.1, matching the latest recorded release section below. Before a future
+  package release, choose and update both versions together and include this
+  input-compatibility change in its release notes. This change does not create
+  a tag, publish a package, or schedule or authorize a release.
+
 - Reject channel-axis and noninteger masks before corruption or evaluation; require exact two-dimensional prediction shape rather than silently scoring extra channels. AI-assisted implementation and tests.
 
 ## 0.1.1 (2026-10-30)

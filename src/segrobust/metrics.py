@@ -31,6 +31,8 @@ def confusion_matrix(pred, target, num_classes, ignore_index=None):
     correct predictions, and dropping it would shrink the denominator and
     can inflate the score, so neither is done silently.
     """
+    if np.ma.isMaskedArray(pred) or np.ma.isMaskedArray(target):
+        raise TypeError("masked label arrays are unsupported; fill ignored targets explicitly and set ignore_index")
     pred = np.asarray(pred).ravel()
     target = np.asarray(target).ravel()
     if pred.shape != target.shape:
@@ -68,6 +70,8 @@ def confusion_matrix(pred, target, num_classes, ignore_index=None):
 
 def _confusion_values(cm):
     """A square, finite, nonnegative count/weight table, widened before sums."""
+    if np.ma.isMaskedArray(cm):
+        raise TypeError("masked confusion matrices are unsupported; provide explicit nonnegative counts")
     cm = np.asarray(cm)
     if cm.ndim != 2 or cm.shape[0] != cm.shape[1]:
         raise ValueError('confusion matrix must be square and two-dimensional')
