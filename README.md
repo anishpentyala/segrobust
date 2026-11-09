@@ -304,3 +304,13 @@ Callbacks must not mutate targets through captured references, retain and
 concurrently rewrite returned prediction arrays, or change other caller state
 if repeatable results are required. Model state and external concurrency are
 not isolated.
+
+
+Report row identity is checked as well as severity columns. `format_report`
+and `segrobust report` require `per_corruption` to contain exactly the names
+listed in `corruptions`; an unlisted saved row is not silently omitted.
+A mismatch raises `ValueError` before any table is printed. Display order
+still follows `corruptions`, not dictionary insertion order. Empty selections
+remain valid when both the list and map are empty, including their existing
+NaN summary. This checks row coverage, not the truth of saved scores or
+whether the saved summary values were recomputed correctly.

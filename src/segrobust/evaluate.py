@@ -166,6 +166,10 @@ def format_report(result):
     names = result['corruptions']
     if len(set(names)) != len(names):
         raise ValueError('report corruption names must be unique')
+    # Conditions are evidence too: never silently discard a saved row that
+    # the displayed plan does not name, or render only part of an experiment.
+    if set(result['per_corruption']) != set(names):
+        raise ValueError('report corruption rows must match report conditions')
     for name in names:
         row = result['per_corruption'][name]
         # Validate key types as well as equality: True and 1.0 compare equal

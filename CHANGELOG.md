@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Reject report condition lists that omit or invent saved `per_corruption`
+  rows before rendering. Valid subsets, display order, empty selections and
+  NaN scores keep their existing behavior. This checks row coverage, not
+  score truth or saved summary arithmetic.
+
+
 ### Changed
 
 - Reject NumPy MaskedArray images, labels, model predictions and confusion
