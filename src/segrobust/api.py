@@ -94,6 +94,8 @@ def _seeded(seed):
 
 
 def _validate_image(image):
+    if np.ma.isMaskedArray(image):
+        raise TypeError("masked image arrays are unsupported; convert nodata explicitly before corruption")
     if not isinstance(image, np.ndarray):
         raise TypeError('image must be a numpy.ndarray')
     if image.dtype != np.uint8:
@@ -162,6 +164,8 @@ def corrupt(image, corruption_name, severity=1, seed=None):
 
 
 def _validate_mask(mask, shape):
+    if np.ma.isMaskedArray(mask):
+        raise TypeError("masked label arrays are unsupported; fill ignored pixels explicitly and set ignore_index")
     if (not isinstance(mask, np.ndarray) or mask.ndim != 2
             or mask.shape != shape):
         raise ValueError('mask must be a 2D ndarray with the same H, W as image')
