@@ -82,7 +82,10 @@ def evaluate(model_fn, images, masks, num_classes, corruptions='common',
             # The clean image may be caller-owned or share storage with its
             # target/other samples. Treat model preprocessing as local to this
             # invocation, just as corrupted conditions use independent images.
-            pred = np.asarray(model_fn(im.copy()))
+            prediction = model_fn(im.copy())
+            if np.ma.isMaskedArray(prediction):
+                raise TypeError("masked model predictions are unsupported; map predictions explicitly before evaluation")
+            pred = np.asarray(prediction)
             if pred.shape != mk.shape:
                 raise ValueError(
                     f'model_fn returned shape {pred.shape} for image '
